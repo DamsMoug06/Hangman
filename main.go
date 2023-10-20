@@ -42,7 +42,7 @@ func main() {
 			var replay string
 			fmt.Scanln(&replay)
 			if strings.ToLower(replay) != "oui" {
-				break
+				return
 			}
 		}
 	}
@@ -101,16 +101,24 @@ func playGame(useTimer bool) {
 				return
 			}
 		}
-
+		
+		clearScreen()
+		fmt.Printf("Mot à deviner: %s\n", string(correct))
 		purple.Printf("Lettres manquées : %s\n", miss)
 		purple.Println(hangmanStages[maxAttempts-attemptsLeft])
 		purple.Printf("Tentatives restantes : %d\n", attemptsLeft)
 		purple.Println("Veuillez entrer une lettre :")
 
 		var letter rune
-		fmt.Scanf("%c\n", &letter)
+		_, err := fmt.Scanf("%c\n", &letter)
 		clearScreen()
-		fmt.Printf("Mot à deviner: %s\n", string(correct))
+
+		if err != nil || !unicode.IsLetter(rune(letter)) {
+			if !errorShown {
+			red.Println("Veuillez entrer une seule lettre de l'alphabet.")
+			continue
+		}
+		errorShown := false
 
 		if letter < 'a' || letter > 'z' {
 			red.Println("Veuillez entrer une lettre de l'alphabet.")
