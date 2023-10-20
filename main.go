@@ -8,22 +8,53 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/fatih/color"
 )
+
+func clearScreen() {
+	fmt.Print("\033c")
+}
 
 func main() {
 	for {
-		playGame()
+		for {
+			var useTimer bool
 
-		fmt.Println("Voulez-vous rejouer ? (Oui/Non)")
-		var replay string
-		fmt.Scanf("%s", &replay)
-		if strings.ToLower(replay) != "oui" {
-			break
+			fmt.Println("Voulez-vous jouer avec un timer ? (Oui/Non)")
+			var timerChoice string
+			fmt.Scanln(&timerChoice)
+			if strings.ToLower(timerChoice) == "oui" {
+				useTimer = true
+			} else {
+				useTimer = false
+			}
+
+			if useTimer {
+				fmt.Println("Vous avez choisi de jouer avec un timer.")
+			} else {
+				fmt.Println("Vous avez choisi de jouer sans timer.")
+			}
+
+			playGame(useTimer)
+
+			fmt.Println("Voulez-vous rejouer ? (Oui/Non)")
+			var replay string
+			fmt.Scanln(&replay)
+			if strings.ToLower(replay) != "oui" {
+				break
+			}
 		}
 	}
 }
 
-func playGame() {
+func playGame(useTimer bool) {
+	clearScreen()
+	red := color.New(color.FgRed)
+	blue := color.New(color.FgBlue)
+	green := color.New(color.FgGreen)
+	purple := color.New(color.FgHiMagenta)
+	yellow := color.New(color.FgHiYellow)
 	wordsList, err := ioutil.ReadFile("words.txt")
 	if err != nil {
 		log.Fatal(err)
@@ -52,40 +83,44 @@ func playGame() {
 	}
 	hangmanStages := strings.Split(string(hangmanStagesBytes), "\n\n")
 
-	fmt.Println("Vous entrez dans le jeu du pendu !")
-	fmt.Println("Quentin, notre cobaye, est prêt pour la pendaison !")
-	fmt.Println("Sauf si vous réussissez à trouver le mot avant !")
-	fmt.Printf("Vous avez %d tentatives pour trouver ce mot.\n", maxAttempts)
+	blue.Println("Vous entrez dans le jeu du pendu !")
+	blue.Println("Quentin, notre cobaye, est prêt pour la pendaison !")
+	blue.Println("Sauf si vous réussissez à trouver le mot avant !")
+	blue.Printf("Vous avez %d tentatives pour trouver ce mot.\n", maxAttempts)
+	time.Sleep(5 * time.Second)
 
 	startTime := time.Now()
 
 	for attemptsLeft > 0 {
 		elapsedTime := time.Since(startTime)
 
-		fmt.Printf("Temps écoulé : %s\n", elapsedTime)
-
-		if elapsedTime > timeLimit {
-			fmt.Println("Temps écoulé ! Vous avez perdu.")
-			return
+		if useTimer {
+			fmt.Printf("Temps écoulé : %s\n", elapsedTime)
+			if elapsedTime > timeLimit {
+				red.Println("Temps écoulé ! Vous avez perdu.")
+				return
+			}
 		}
 
-		fmt.Printf("Lettres manquées : %s\n", miss)
-		fmt.Println(hangmanStages[maxAttempts-attemptsLeft])
-		fmt.Printf("Tentatives restantes : %d\n", attemptsLeft)
-		fmt.Println("Veuillez entrer une lettre :")
+		purple.Printf("Lettres manquées : %s\n", miss)
+		purple.Println(hangmanStages[maxAttempts-attemptsLeft])
+		purple.Printf("Tentatives restantes : %d\n", attemptsLeft)
+		purple.Println("Veuillez entrer une lettre :")
 
 		var letter rune
 		fmt.Scanf("%c\n", &letter)
+		clearScreen()
+		fmt.Printf("Mot à deviner: %s\n", string(correct))
 
 		if letter < 'a' || letter > 'z' {
-			fmt.Println("Veuillez entrer une lettre de l'alphabet.")
+			red.Println("Veuillez entrer une lettre de l'alphabet.")
 			continue
 		}
 
 		letter = unicode.ToLower(letter)
 
 		if _, ok := usedLetters[letter]; ok {
-			fmt.Printf("Vous avez déjà essayé la lettre '%c'.\n", letter)
+			yellow.Printf("Vous avez déjà essayé la lettre '%c'.\n", letter)
 			continue
 		}
 		usedLetters[letter] = true
@@ -101,12 +136,11 @@ func playGame() {
 			miss += string(letter)
 			attemptsLeft--
 		}
-		fmt.Printf("Mot à deviner: %s\n", string(correct))
 		if string(correct) == word {
-			fmt.Printf("Vous avez gagné ! Le mot était: %s\n", word)
+			green.Printf("Vous avez gagné ! Le mot était: %s\n", word)
 			return
 		}
 	}
 
-	fmt.Printf("Vous avez perdu ! Le mot était: %s\n", word)
+	red.Printf("Vous avez perdu ! Le mot était: %s\n", word)
 }
