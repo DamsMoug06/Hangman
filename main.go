@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 	"unicode"
@@ -17,33 +19,30 @@ func clearScreen() {
 }
 
 func main() {
+	var useTimer bool
 	for {
-		for {
-			var useTimer bool
+		fmt.Println("Voulez-vous jouer avec un timer ? (Oui/Non)")
+		var timerChoice string
+		fmt.Scanln(&timerChoice)
+		if strings.ToLower(timerChoice) == "oui" {
+			useTimer = true
+		} else {
+			useTimer = false
+		}
 
-			fmt.Println("Voulez-vous jouer avec un timer ? (Oui/Non)")
-			var timerChoice string
-			fmt.Scanln(&timerChoice)
-			if strings.ToLower(timerChoice) == "oui" {
-				useTimer = true
-			} else {
-				useTimer = false
-			}
+		if useTimer {
+			fmt.Println("Vous avez choisi de jouer avec un timer.")
+		} else {
+			fmt.Println("Vous avez choisi de jouer sans timer.")
+		}
 
-			if useTimer {
-				fmt.Println("Vous avez choisi de jouer avec un timer.")
-			} else {
-				fmt.Println("Vous avez choisi de jouer sans timer.")
-			}
+		playGame(useTimer)
 
-			playGame(useTimer)
-
-			fmt.Println("Voulez-vous rejouer ? (Oui/Non)")
-			var replay string
-			fmt.Scanln(&replay)
-			if strings.ToLower(replay) != "oui" {
-				return
-			}
+		fmt.Println("Voulez-vous rejouer ? (Oui/Non)")
+		var replay string
+		fmt.Scanln(&replay)
+		if strings.ToLower(replay) != "oui" {
+			return
 		}
 	}
 }
@@ -101,7 +100,7 @@ func playGame(useTimer bool) {
 				return
 			}
 		}
-		
+
 		clearScreen()
 		fmt.Printf("Mot à deviner: %s\n", string(correct))
 		purple.Printf("Lettres manquées : %s\n", miss)
@@ -109,26 +108,26 @@ func playGame(useTimer bool) {
 		purple.Printf("Tentatives restantes : %d\n", attemptsLeft)
 		purple.Println("Veuillez entrer une lettre :")
 
-		var letter rune
-		_, err := fmt.Scanf("%c\n", &letter)
-		clearScreen()
+		reader := bufio.NewReader(os.Stdin)
+		letter, _, err := reader.ReadRune()
 
-		if err != nil || !unicode.IsLetter(rune(letter)) {
-			if !errorShown {
-			red.Println("Veuillez entrer une seule lettre de l'alphabet.")
-			continue
-		}
-		errorShown := false
-
-		if letter < 'a' || letter > 'z' {
-			red.Println("Veuillez entrer une lettre de l'alphabet.")
+		if err != nil {
+			red.Println("Erreur de lecture.")
+			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		letter = unicode.ToLower(letter)
 
+		if !unicode.IsLetter(letter) || len([]rune(string(letter))) != 1 {
+			red.Println("Veuillez entrer une seule lettre de l'alphabet.")
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
 		if _, ok := usedLetters[letter]; ok {
 			yellow.Printf("Vous avez déjà essayé la lettre '%c'.\n", letter)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		usedLetters[letter] = true
@@ -144,6 +143,7 @@ func playGame(useTimer bool) {
 			miss += string(letter)
 			attemptsLeft--
 		}
+		fmt.Printf("Mot à deviner: %s\n", string(correct))
 		if string(correct) == word {
 			green.Printf("Vous avez gagné ! Le mot était: %s\n", word)
 			return
